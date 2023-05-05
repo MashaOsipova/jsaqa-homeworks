@@ -2,19 +2,23 @@ const { TimeoutError } = require("puppeteer");
 
 let page;
 
-beforeEach(async () => {
-  page = await browser.newPage();
-  await page.goto("https://github.com/team");
+beforeEach(async() => {
+    page = await browser.newPage();
+    await page.setDefaultNavigationTimeout(0);
 });
 
 afterEach(() => {
-  page.close();
+    page.close();
 });
 
 describe("Github page tests", () => {
-  test("The h1 header content'", async () => {
-    const firstLink = await page.$("header div div a");
-    await firstLink.click();
+    beforeEach(async() => {
+        await page.goto("https://github.com/team");
+    });
+
+    test("The h1 header content'", async() => {
+        const firstLink = await page.$("header div div a");
+        await firstLink.click();
     await page.waitForSelector('h1');
     const title2 = await page.title();
     expect(title2).toEqual('GitHub: Where the world builds software · GitHub');
