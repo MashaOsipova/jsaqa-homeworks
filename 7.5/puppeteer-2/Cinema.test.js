@@ -1,61 +1,86 @@
 const {
-  selectDateTime,
-  orderTickets,
-  checkSeatIsTaken,
-} = require("./lib/util.js");
-const { getText } = require("./lib/commands");
+    clickElement,
+    getText,
+    row1PlaseVip,
+    seats
+} = require("./lib/commands");
+const {
+    days,
+    moviTime
+} = require("./lib/pageIndex");
 
 let page;
-let tomorrow = "nav.page-nav > a:nth-child(2)"; 
-let oneWeek = "nav.page-nav > a:nth-child(7)"; 
-let movieTime = "[data-seance-id='94']"; 
-let ticketHint = "p.ticket__hint";
-let confirmingText = "Покажите QR-код нашему контроллеру для подтверждения бронирования.";
 
-describe("Service for Movie tickets order", () => {
-  beforeEach(async () => {
+beforeEach(async() => {
     page = await browser.newPage();
-    await page.goto("http://qamid.tmweb.ru/client/index.php");
-    await page.setDefaultNavigationTimeout(0);
-  });
+    await page.setDefaultNavigationTimeout(60000);
+});
 
-  afterEach(() => {
+afterEach(() => {
     page.close();
-  });
+});
 
-  test("Should order one ticket for Movie-1 tomorrow", async () => {
-    await selectDateTime(page, tomorrow, movieTime);
-    await orderTickets(page, 1, 2);
-    const actual = await getText(page, ticketHint);
-    expect(actual).toContain(confirmingText);
-  });
+describe("Ticket booking", () => {
+    beforeEach(async() => {
+        await page.goto("http://qamid.tmweb.ru/client/index.php", {
+            timeout: 60000,
+        });
+    });
 
-  test("Should order three tickets for Movie-1 in a week", async () => {
-    await selectDateTime(page, oneWeek, movieTime);
-    await orderTickets(page, 1, 7, 8, 9);
-    const actual = await getText(page, ticketHint);
-    expect(actual).toContain(confirmingText);
-  });
+    test("should book one VIP seat", async() => {
+        await days(page, "5");
+        await moviTime(page, "2", "2");
+        await page.waitForSelector("h1");
+        await row1PlaseVip(page, "1");
+        await clickElement(page, "button");
+        await page.waitForSelector("h1");
+        const actual = await getText(
+            page,
+            "main > section > div > p:nth-child(2) > span",
+            (text) => text.textContent
+        );
+        const expected = "1/2";
+        const actualPrise = await getText(
+            page,
+            "main > section > div > p:nth-child(6) > span",
+            (text) => text.textContent
+        );
+        const expectedPrise = "350";
+        expect(actual).toContain(expected);
+        expect(actualPrise).toContain(expectedPrise);
+    }, 60000);
 
-  test("Should try to order ticket for Movie-1 if seat is taken already", async () => {
-    await expect(async () => {
-      await selectDateTime(page, tomorrow, movieTime);
-      await orderTickets(page, 1, 2);
-    }).rejects.toThrowError("Seat(s) is taken");
-  });
+    test("should book two seats", async() => {
+        await days(page, "6");
+        await moviTime(page, "1", "3");
+        await page.waitForSelector("h1");
+        await seats(page, "5", "6");
+        await seats(page, "5", "7");
+        await clickElement(page, "button");
+        await page.waitForSelector("h1");
+        const actual = await getText(
+            page,
+            "main > section > div > p:nth-child(2) > span",
+            (text) => text.textContent
+        );
+        const expected = "5/6, 5/7";
+        const actualPrise = await getText(
+            page,
+            "main > section > div > p:nth-child(6) > span",
+            (text) => text.textContent
+        );
+        const expectedPrise = "200";
+        expect(actual).toContain(expected);
+        expect(actualPrise).toContain(expectedPrise);
+    }, 60000);
 
-  test("Check if the place is taken after ordering ", async () => {
-    let row = 2;
-    let seat = 9;
-    await selectDateTime(page, oneWeek, movieTime);
-    await orderTickets(page, row, seat);
-    await page.goto("http://qamid.tmweb.ru/client/index.php");
-    await selectDateTime(page, oneWeek, movieTime);
-    await checkSeatIsTaken(page, row, seat);
-    const classExist = await page.$eval(
-      `div.buying-scheme__wrapper > div:nth-child(${row}) > span:nth-child(${seat})`,
-      (el) => el.classList.contains("buying-scheme__chair_taken")
-    );
-    expect(classExist).toEqual(true);
-  });
+    test("should not book", async() => {
+        await days(page, "2");
+        await moviTime(page, "2", "3");
+        await page.waitForSelector("h1");
+        await clickElement(page, "button");
+        const actual = await getText(page, "h2", (text) => text.textContent);
+        const expected = "Фильм 3";
+        expect(actual).toContain(expected);
+    }, 60000);
 });
