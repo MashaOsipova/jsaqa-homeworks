@@ -1,19 +1,26 @@
-Feature: Booking a movie-1 ticket for tomorrow
-    Scenario: The user must select a seat and order a ticket
-        Given user is on "/index.php" page
-        When user select 2-th day and movie
-        And select and book 9 row and 1 seat
-        Then user received confirmation and qr-code
-    Scenario: The user wants to check if the seat is booked
-        Given user is on "/index.php" page
-        When user select 2-th day and movie
-        And select and book 9 row and 2 seat
-        And user is on "/index.php" page
-        When user select 2-th day and movie
-        And sees that 9 row and 2 seat is taken trying select them
-        Then Book button is not active
-    Scenario: user wants to order three tickets for Movie-1
-        Given user is on "/index.php" page
-        When user select 2-th day and movie
-        And select and book 9 row and 7,8,9 seats
-        Then user received confirmation and qr-code
+Feature: Booking a seat
+    Scenario: Should book one seat
+        Given user is on "/client/index.php" page
+        When user chooses by day "5"
+        When user chooses movie "2" show "2"
+        When user chooses seat Vip "1"
+        When user click "button"
+        Then user sees text "Вы выбрали билеты:"
+        Then user sees the reserved seat "1/2"
+
+    Scenario: Should book two seats
+        Given user is on "/client/index.php" page
+        When user chooses by day "6"
+        When user chooses movie "1" show "3"
+        When user chooses seat "5", "6"
+        When user chooses seat "5", "7"
+        When user click "button"
+        Then user sees text "Вы выбрали билеты:"
+        Then user sees the reserved seat "5/6, 5/7"
+
+    Scenario: Should not book
+        Given user is on "/client/index.php" page
+        When user chooses by day "2"
+        When user chooses movie "2" show "3"
+        When user click "button"
+        Then user sees the header "Фильм 3"
